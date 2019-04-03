@@ -12,14 +12,25 @@
 # ex) ./beautifier.sh ~/test_beauty.sh /home/yummyHit/output.sh 10
 # ----------------------------------
 
-if [ "$#" != "3" ]; then
-	echo "Usage: $0 <File Name> <Output File Name> <Tab space>"
-	return
+if [ "$#" -lt "1" ]; then
+	echo "Usage: $0 <File Name> [ Output File Name ] [ Tab space ]"
+	echo "       ex) ./beautifier.sh ~/test_beauty.sh /home/yummyHit/output.sh 10"
+	echo "       Must keep options ordering"
+	echo
+	echo "       If Output file name is blank, $1\_beauty is default output file name"
+	echo "       Tab space is indent or tab default space. default 4"
+	exit
 fi
 
 FILENAME="$1"
 OUTPUTFILENAME="$2"
 TABSPACE="$3"
+
+# File path wrong
+if [ ! -f "$FILENAME" ]; then
+	echo "No such file or path"
+	exit
+fi
 
 # Default out file
 if [ "$OUTPUTFILENAME" = "" ]; then
