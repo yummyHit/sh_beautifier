@@ -47,7 +47,7 @@ fi
 echo "Get File Name is $FILENAME!!"
 echo "Find String is $STRING!!"
 
-if [ `echo $COLORLIST | grep $COLOR | wc -l` -eq 1 ]; then
+if [ "$COLOR" != "" ] && [ `echo $COLORLIST | grep $COLOR | wc -l` -eq 1 ]; then
 	echo "Selected Color is $COLOR!!"
 fi
 
@@ -81,4 +81,4 @@ case $COLOR in
 		;;
 esac
 
-tail -f $FILENAME | awk '{if($0 ~ /'$STRING'/) {gsub(/'$STRING'/,"'$COLOR_STR'")}} {print}'
+tail -f $FILENAME | awk '{if($0 ~ /'"$STRING"'/) {gsub(/'"$STRING"'/,"'"$COLOR_STR"'")}} {print}'
