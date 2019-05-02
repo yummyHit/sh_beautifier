@@ -40,10 +40,10 @@ fi
 
 # Default out file
 if [ "$OUTPUTFILENAME" = "" ]; then
-	OUTPUTFILENAME="$FILENAME\\_beauty"
+	OUTPUTFILENAME="yummyhit_$FILENAME"
 fi
 
-TEMPFILE="$OUTPUTFILENAME\\_tmp"
+TEMPFILE="tmp_yummyhit_$OUTPUTFILENAME"
 
 # clear the destination file
 : > $OUTPUTFILENAME
