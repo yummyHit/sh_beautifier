@@ -9,12 +9,18 @@
 # $2 = output file name
 # $3 = tab space
 # ----------------------------------
-# ex) ./beautifier.sh ~/test_beauty.sh /home/yummyHit/output.sh 10
+# ex) ./c_beautifier.sh ~/test_beauty.c /home/yummyHit/output.c 10
+# ----------------------------------
+# !!! Warning !!!
+# if curly brace is unmatched, it occur somewhere.
+# ex) main() {
+#     // }
+#     }
 # ----------------------------------
 
 if [ "$#" -lt "1" ]; then
 	echo "Usage: $0 <File Name> [ Output File Name ] [ Tab space ]"
-	echo "       ex) ./beautifier.sh ~/test_beauty.sh /home/yummyHit/output.sh 10"
+	echo "       ex) ./c_beautifier.sh ~/test_beauty.c /home/yummyHit/output.c 10"
 	echo "       Must keep options ordering"
 	echo
 	echo "       If Output file name is blank, $1\_beauty is default output file name"
@@ -58,39 +64,56 @@ echo "Get File Name is $FILENAME!!"
 echo "Output File Name is $OUTPUTFILENAME!!"
 echo "PADDER is ($PADDER)"
 
-if_counter=0
+tab_counter=0
+open_counter=0
+close_counter=0
 LINE_NUMBER=`cat $FILENAME | wc -l`
 ACTUAL_LINE=1
 
 sed -e 's/\\//g' $FILENAME | while read -r line; do
-	linea=`echo "$line" | sed -e 's/^ *//g' -e 's/^\t*//g'`
+	line_tmp=`echo "$line" | sed -e 's/^ *//g' -e 's/^\t*//g'`
+	linea=`echo "$line_tmp" | sed -e 's/\ $//g'`
+	while [ "`echo "$linea" | grep \"\ $\" | wc -l | sed -e 's/^ *//g' -e 's/^\t*//g'`" -ne 0 ]; do
+		linea=`echo "$linea" | sed -e 's/\ $//g'`
+	done
 
-	cur_stat_first=`echo "$linea" | awk '{print $1}'`
-	cur_stat_last=`echo "$linea" | awk '{print $NF}' | tr -d ';'`
+	while [ "`echo \"$linea\" | egrep \"{{|}}\" | wc -l | sed -e 's/^ *//g' -e 's/^\t*//g'`" -ne 0 ]; do
+		linea=`echo "$linea" | sed -e 's/}}/} }/g' -e 's/{{/{ {/g'`
+	done
 
-	is_fi_first=`echo "$cur_stat_first" | tr -d ' '`
-	is_fi_last=`echo "$cur_stat_last" | tr -d ' '`
+	cur_stat_first=0;
+	cur_stat_last=0;
 
-	if [ "$is_fi_first" = "fi" ] || [ "$cur_stat_first" = "else" ] || [ "$cur_stat_first" = "esac" ] || [ "$cur_stat_first" = "done" ] || [ "$cur_stat_first" = "elif" ]; then	
-		if_counter=`expr $if_counter - 1`
-	elif [ "$is_fi_last" = "fi" ] || [ "$cur_stat_last" = "else" ] || [ "$cur_stat_last" = "esac" ] || [ "$cur_stat_last" = "done" ] || [ "$cur_stat_last" = "elif" ]; then	
-		if_counter=`expr $if_counter - 1`
+	cur_stat_first=`echo "$linea" | grep -v "^\/\/" | awk 'BEGIN{count=0}{for(i=1;i<=NF;i++) if($i ~ /{/) count++;}END{print count}'`
+	cur_stat_last=`echo "$linea" | grep -v "^\/\/" | awk 'BEGIN{count=0}{for(i=1;i<=NF;i++) if($i ~ /}/) count++;}END{print count}'`
+
+	if [ $cur_stat_first -ne 0 ]; then
+		open_counter=`expr $open_counter + $cur_stat_first`
+	fi
+
+	if [ $cur_stat_last -ne 0 ]; then
+		close_counter=`expr $close_counter + $cur_stat_last`
+	fi
+
+	if [ $cur_stat_last -ge 1 ] && [ $open_counter -ge $close_counter ]; then
+		tab_counter=`expr $tab_counter - $cur_stat_last`
+	fi
+
+	if [ $open_counter -le $close_counter ]; then
+		tab_counter=0
+		open_counter=0
+		close_counter=0
 	fi
 
 	i=0
-	while [ $i -lt $if_counter ]; do
+	while [ $i -lt $tab_counter ]; do
 		linea=`echo "${PADDER}${linea}"`
 		i=`expr $i + 1`
 	done
 
-	is_do_first=`echo "$cur_stat_first" | tr -d ' '`
-	is_do_last=`echo "$cur_stat_last" | tr -d ' '`
 
-	# If it is a condition open
-	if [ "$cur_stat_first" = "else" ] || [ "$cur_stat_first" = "case" ] || [ "$cur_stat_first" = "then" ] || [ "$is_do_first" = "do" ]; then
-		if_counter=`expr $if_counter + 1`
-	elif [ "$cur_stat_last" = "else" ] || [ "$cur_stat_last" = "case" ] || [ "$cur_stat_last" = "then" ] || [ "$is_do_last" = "do" ]; then
-		if_counter=`expr $if_counter + 1`
+	if [ $cur_stat_first -ge 1 ] && [ $open_counter -ge $close_counter ]; then
+		tab_counter=`expr $tab_counter + $cur_stat_first`
 	fi
 
 	echo "$linea" >> "$TEMPFILE"
